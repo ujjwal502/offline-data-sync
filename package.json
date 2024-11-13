@@ -1,6 +1,6 @@
 {
   "name": "offline-data-sync",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Offline-first data synchronization library with conflict resolution",
   "type": "module",
   "main": "./dist/cjs/index.cjs",
@@ -8,15 +8,26 @@
   "types": "./dist/types/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/types/index.d.ts",
       "import": "./dist/esm/index.js",
       "require": "./dist/cjs/index.cjs",
-      "types": "./dist/types/index.d.ts"
+      "default": "./dist/esm/index.js"
     }
   },
+  "sideEffects": false,
   "files": [
     "dist",
-    "README.md"
+    "src",
+    "README.md",
+    "LICENSE"
   ],
+  "typesVersions": {
+    "*": {
+      "*": [
+        "dist/types/*"
+      ]
+    }
+  },
   "scripts": {
     "clean": "rimraf dist",
     "build": "npm run clean && npm run build:esm && npm run build:cjs && npm run build:types",
