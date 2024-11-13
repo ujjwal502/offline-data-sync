@@ -1,22 +1,49 @@
 {
   "name": "offline-data-sync",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Offline-first data synchronization library with conflict resolution",
   "type": "module",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "main": "./dist/cjs/index.cjs",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.cjs",
+      "types": "./dist/types/index.d.ts"
+    }
   },
-  "keywords": [],
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "clean": "rimraf dist",
+    "build": "npm run clean && npm run build:esm && npm run build:cjs && npm run build:types",
+    "build:esm": "tsc -p tsconfig.esm.json",
+    "build:cjs": "tsc -p tsconfig.cjs.json && node scripts/fix-cjs-exports.js",
+    "build:types": "tsc -p tsconfig.types.json",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "offline",
+    "sync",
+    "indexeddb",
+    "typescript"
+  ],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "devDependencies": {
-    "ts-loader": "^9.5.1",
-    "typescript": "^5.6.3",
-    "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4"
+    "rimraf": "^5.0.0",
+    "typescript": "^5.6.3"
   },
   "dependencies": {
     "idb": "^8.0.0"
+  },
+  "peerDependencies": {
+    "typescript": ">=4.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

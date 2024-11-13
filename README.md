@@ -95,7 +95,7 @@ interface SyncConfig {
 }
 ```
 
-## 🔄 Conflict Resolution Strategies
+## Conflict Resolution Strategies
 
 ### 1. Client Wins
 
@@ -151,7 +151,7 @@ await syncManager.resolveConflict(
 );
 ```
 
-## 🎯 Use Cases
+## Use Cases
 
 - **Field Service Applications**
 
@@ -176,7 +176,7 @@ await syncManager.resolveConflict(
   - Auto-save and sync
   - Collaborative editing support
 
-## 🔍 API Reference
+## API Reference
 
 ### SyncManager
 
@@ -197,7 +197,7 @@ class SyncManager {
 }
 ```
 
-## 🛠️ Development
+## Development
 
 ```bash
 # Install dependencies
@@ -210,21 +210,21 @@ npm run build
 npm test
 ```
 
-## 📈 Performance Considerations
+## Performance Considerations
 
 - Implements efficient batch processing
 - Optimized IndexedDB operations
 - Minimal memory footprint
 - Network-aware sync strategies
 
-## 🔐 Security
+## Security
 
 - Secure local data storage
 - Protected sync operations
 - Version control
 - Data integrity validation
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)
@@ -232,6 +232,6 @@ npm test
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📝 License
+## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
