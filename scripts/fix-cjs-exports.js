@@ -25,19 +25,25 @@ async function fixExports(dir) {
     // Replace ESM imports with require
     content = content.replace(
       /import \{([^}]+)\} from ["']([^"']+)["'];?/g,
-      'const {$1} = require("$2");'
+      (match, imports, path) => {
+        // Handle relative imports
+        const adjustedPath = path.replace(/\.js$/, "");
+        return `const {${imports}} = require("${adjustedPath}");`;
+      }
     );
 
     // Replace export declarations
     content = content.replace(/export (\{[^}]+\});/, "module.exports = $1;");
     content = content.replace(
       /export class ([^ ]+)/,
-      "class $1\nmodule.exports.$1"
+      "class $1\nmodule.exports.$1 = $1;"
+    );
+    content = content.replace(
+      /export type (\{[^}]+\});/,
+      "module.exports.types = $1;"
     );
 
-    // Write the modified content
-    const newPath = filePath.replace(/\.js$/, ".cjs");
-    await writeFile(newPath, content);
+    await writeFile(filePath, content);
   }
 }
 

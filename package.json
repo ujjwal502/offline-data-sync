@@ -1,33 +1,27 @@
 {
   "name": "offline-data-sync",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "description": "Offline-first data synchronization library with conflict resolution",
   "type": "module",
-  "main": "./dist/cjs/index.cjs",
+  "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
   "types": "./dist/types/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/types/index.d.ts",
-      "import": "./dist/esm/index.js",
-      "require": "./dist/cjs/index.cjs",
-      "default": "./dist/esm/index.js"
+      "import": {
+        "types": "./dist/types/index.d.ts",
+        "default": "./dist/esm/index.js"
+      },
+      "require": {
+        "types": "./dist/types/index.d.ts",
+        "default": "./dist/cjs/index.js"
+      }
     }
   },
   "sideEffects": false,
   "files": [
-    "dist",
-    "src",
-    "README.md",
-    "LICENSE"
+    "dist"
   ],
-  "typesVersions": {
-    "*": {
-      "*": [
-        "dist/types/*"
-      ]
-    }
-  },
   "scripts": {
     "clean": "rimraf dist",
     "build": "npm run clean && npm run build:esm && npm run build:cjs && npm run build:types",
@@ -50,9 +44,6 @@
   },
   "dependencies": {
     "idb": "^8.0.0"
-  },
-  "peerDependencies": {
-    "typescript": ">=4.0.0"
   },
   "publishConfig": {
     "access": "public"
