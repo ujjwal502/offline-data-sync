@@ -28,7 +28,8 @@
     "build:esm": "tsc -p tsconfig.esm.json",
     "build:cjs": "tsc -p tsconfig.cjs.json && node scripts/fix-cjs-exports.js",
     "build:types": "tsc -p tsconfig.types.json",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "link": "cd dist && npm link"
   },
   "keywords": [
     "offline",
@@ -39,8 +40,12 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@types/node": "^20.11.0",
     "rimraf": "^5.0.0",
-    "typescript": "^5.6.3"
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.6.3",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4"
   },
   "dependencies": {
     "idb": "^8.0.0"
