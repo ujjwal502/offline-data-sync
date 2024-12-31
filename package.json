@@ -37,7 +37,7 @@
     "indexeddb",
     "typescript"
   ],
-  "author": "",
+  "author": "ujjwaltiwari2@gmail.com",
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^20.11.0",

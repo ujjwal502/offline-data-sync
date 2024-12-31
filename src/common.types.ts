@@ -20,6 +20,7 @@ interface SyncConfig {
 interface SyncRecord {
   id: string;
   data: any;
+  serverId?: string | number;
   lastModified: number;
   syncStatus: "synced" | "pending" | "conflict";
   operation: "create" | "update" | "delete";

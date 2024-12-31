@@ -9,7 +9,6 @@ export class SyncManager {
   private db: IDBPDatabase<SyncDB> | null = null;
   private config: SyncConfig;
   private isOnline: boolean = navigator.onLine;
-  private conflictResolver: ConflictResolver;
   private retryManager: RetryManager;
   private initPromise: Promise<void>;
   private apiAdapter: ApiAdapter;
@@ -33,7 +32,6 @@ export class SyncManager {
               "Either apiAdapter or syncEndpoint must be provided"
             );
           })());
-    this.conflictResolver = new ConflictResolver(this.config);
     this.retryManager = new RetryManager(this.config);
 
     this.initPromise = this.initializeDB();
@@ -85,7 +83,7 @@ export class SyncManager {
 
     const record: SyncRecord = {
       id: crypto.randomUUID(),
-      data: { ...data, id: crypto.randomUUID() },
+      data: { ...data },
       lastModified: Date.now(),
       syncStatus: this.isOnline ? "synced" : "pending",
       operation: "create",
@@ -108,7 +106,10 @@ export class SyncManager {
 
     const updatedRecord: SyncRecord = {
       ...record,
-      data,
+      data: {
+        ...data,
+        id: record.serverId || record.data.id,
+      },
       lastModified: Date.now(),
       syncStatus: this.isOnline ? "synced" : "pending",
       operation: "update",
@@ -124,31 +125,28 @@ export class SyncManager {
   async delete(id: string): Promise<void> {
     await this.ensureInitialized();
 
-    // Get all records and find the one with matching data.id
-    const records = await this.db!.getAll(this.config.storeName as never);
-    const recordToDelete = records.find((record) => record.data.id === id);
-
-    if (!recordToDelete) {
-      console.warn(`Record with data.id ${id} not found for deletion`);
-      return;
+    const record = await this.db!.get(this.config.storeName as never, id);
+    if (!record) {
+      throw new Error("Record not found");
     }
 
     // First, delete the original record
-    await this.db!.delete(this.config.storeName as never, recordToDelete.id);
+    await this.db!.delete(this.config.storeName as never, id);
 
-    // Create a deletion record with a new ID to track the sync status
-    const record: SyncRecord = {
-      id: crypto.randomUUID(), // New unique ID for the deletion record
-      data: { id }, // Store just the ID we want to delete
+    // Create a deletion record with the server ID
+    const deletionRecord: SyncRecord = {
+      id: crypto.randomUUID(),
+      data: { id: record.serverId || record.data.id },
       lastModified: Date.now(),
       syncStatus: this.isOnline ? "synced" : "pending",
       operation: "delete",
+      serverId: record.serverId,
     };
 
-    await this.db!.put(this.config.storeName as never, record);
+    await this.db!.put(this.config.storeName as never, deletionRecord);
 
     if (this.isOnline) {
-      await this.syncRecord(record);
+      await this.syncRecord(deletionRecord);
     } else {
       console.log("Offline, deletion record will be synced later");
     }
@@ -213,9 +211,11 @@ export class SyncManager {
           serverData !== null &&
           "data" in serverData
         ) {
+          const serverResponseData = serverData.data as Record<string, unknown>;
+          record.serverId = serverResponseData.id as string | number;
           record.data = {
             ...record.data,
-            ...(serverData.data as Record<string, unknown>),
+            ...serverResponseData,
           };
         }
         await this.db.put(this.config.storeName as never, record);
