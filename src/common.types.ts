@@ -1,7 +1,10 @@
+import { ApiAdapter } from "./SyncManager/types.js";
+
 interface SyncConfig {
   storeName: string;
   primaryKey?: string;
-  syncEndpoint: string;
+  syncEndpoint?: string;
+  apiAdapter?: ApiAdapter;
   conflictResolution?:
     | "client-wins"
     | "server-wins"

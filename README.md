@@ -51,12 +51,24 @@ npm install offline-data-sync
 ## 🚦 Quick Start
 
 ```typescript
-import { SyncManager } from "offline-data-sync";
+import { SyncManager, ApiAdapter } from "offline-data-sync";
 
-// Initialize the sync manager
+// Implement your API adapter
+class MyApiAdapter implements ApiAdapter {
+  async create(data: any): Promise<any> {
+    // Implement create logic
+    return await fetch("your-api/create", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }).then((res) => res.json());
+  }
+  // Implement other required methods...
+}
+
+// Initialize the sync manager with API adapter
 const syncManager = new SyncManager({
   storeName: "myStore",
-  syncEndpoint: "https://api.example.com/sync",
+  apiAdapter: new MyApiAdapter(),
   conflictResolution: "last-write-wins",
   batchSize: 50,
 });
@@ -84,7 +96,8 @@ const records = await syncManager.getAll();
 ```typescript
 interface SyncConfig {
   storeName: string; // IndexedDB store name
-  syncEndpoint: string; // Server endpoint for sync
+  apiAdapter: ApiAdapter; // Your API adapter implementation
+  syncEndpoint?: string; // Optional server endpoint for sync
   primaryKey?: string; // Primary key field (default: 'id')
   conflictResolution?: // Conflict resolution strategy
   "client-wins" | "server-wins" | "last-write-wins" | "merge" | "manual";
@@ -92,6 +105,15 @@ interface SyncConfig {
   maxRetries?: number; // Maximum retry attempts
   retryDelay?: number; // Base delay between retries (ms)
   mergeStrategy?: (clientData: any, serverData: any) => any;
+}
+
+// API Adapter Interface
+interface ApiAdapter {
+  create(data: any): Promise<any>;
+  update(id: string, data: any): Promise<any>;
+  delete(id: string): Promise<any>;
+  get(id: string): Promise<any>;
+  getAll(): Promise<any[]>;
 }
 ```
 
@@ -206,6 +228,9 @@ npm install
 # Build the library
 npm run build
 
+# Link for local development
+npm run link
+
 # Run tests
 npm test
 ```
@@ -235,3 +260,25 @@ npm test
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Example Application
+
+An example application is included in the `example/ods-sample-app` directory to demonstrate the library's capabilities:
+
+```bash
+# Navigate to example app
+cd example/ods-sample-app
+
+# Install dependencies
+npm install
+
+# Start the example app
+npm start
+```
+
+The example app showcases:
+
+- Implementation of API adapter pattern
+- Offline-first data management
+- Real-time sync status monitoring
+- Best practices for library usage

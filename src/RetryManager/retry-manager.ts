@@ -20,10 +20,21 @@ export class RetryManager {
     await new Promise((resolve) => setTimeout(resolve, delay));
   }
 
+  /**
+   * Calculates delay for the next retry attempt using exponential backoff with jitter
+   * @param retryCount - Number of previous retry attempts
+   * @returns Delay in milliseconds, capped at 30 seconds
+   *
+   * Formula: baseDelay * 2^retryCount * jitter
+   * - Uses exponential backoff (2^retryCount) to increase delays between retries
+   * - Adds random jitter (0.85-1.15) to prevent thundering herd problem
+   * - Caps maximum delay at 30000ms (30 seconds)
+   */
+
   private calculateExponentialDelay(retryCount: number): number {
     const jitter = Math.random() * 0.3 + 0.85;
-    return (
-      Math.min(this.retryConfig.baseDelay * Math.pow(2, retryCount)) * jitter,
+    return Math.min(
+      this.retryConfig.baseDelay * Math.pow(2, retryCount) * jitter,
       30000
     );
   }
