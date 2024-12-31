@@ -7,24 +7,36 @@ export class TodoApiAdapter implements ApiAdapter {
     return fetch(this.baseUrl, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
+        "Content-type": "application/json; charset=UTF-8",
       },
-      body: JSON.stringify(record.data),
+      body: JSON.stringify({
+        title: record.data.title,
+        completed: record.data.completed,
+        userId: record.data.userId,
+      }),
     });
   }
 
   async update(record: SyncRecord): Promise<Response> {
-    return fetch(`${this.baseUrl}/${record.data.id}`, {
-      method: "PUT",
+    const id = record.serverId || record.data.id;
+    console.log("Updating todo with server ID:", id, "Record:", record);
+
+    return fetch(`${this.baseUrl}/${id}`, {
+      method: "PATCH",
       headers: {
-        "Content-Type": "application/json",
+        "Content-type": "application/json; charset=UTF-8",
       },
-      body: JSON.stringify(record.data),
+      body: JSON.stringify({
+        completed: record.data.completed,
+      }),
     });
   }
 
   async delete(record: SyncRecord): Promise<Response> {
-    return fetch(`${this.baseUrl}/${record.data.id}`, {
+    const id = record.serverId || record.data.id;
+    console.log("Deleting todo with server ID:", id, "Record:", record);
+
+    return fetch(`${this.baseUrl}/${id}`, {
       method: "DELETE",
     });
   }
@@ -37,12 +49,27 @@ export class TodoApiAdapter implements ApiAdapter {
         return { error: "Resource not found" };
       }
       try {
-        return await response.json();
+        const errorData = await response.json();
+        return { error: errorData.message || "API error" };
       } catch {
         return { error: "Failed to parse error response" };
       }
     }
-    if (response.status === 204) return null;
-    return response.json();
+
+    try {
+      if (response.status === 204) {
+        return null;
+      }
+      const data = await response.json();
+      console.log("Server response:", data);
+      return {
+        data: {
+          ...data,
+          serverId: data.id,
+        },
+      };
+    } catch {
+      return null;
+    }
   }
 }
