@@ -1,6 +1,6 @@
 {
   "name": "offline-data-sync",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Offline-first data synchronization library with conflict resolution",
   "type": "module",
   "main": "./dist/cjs/index.js",
