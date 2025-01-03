@@ -34,10 +34,12 @@ export class ConflictResolver {
   ): Promise<SyncRecord> {
     return {
       ...record,
-      data: serverData,
-      version: (record.version || 0) + 1,
+      data: serverData.serverVersion || serverData,
+      version: serverData.version || (record.version || 0) + 1,
+      lastModified: serverData.lastModified || Date.now(),
       syncStatus: "synced",
       serverData: undefined,
+      conflictDetails: undefined,
     };
   }
 

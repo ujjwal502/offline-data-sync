@@ -10,6 +10,7 @@ export class SyncManager {
   private config: SyncConfig;
   private isOnline: boolean = navigator.onLine;
   private retryManager: RetryManager;
+  private conflictResolver: ConflictResolver;
   private initPromise: Promise<void>;
   private apiAdapter: ApiAdapter;
 
@@ -33,6 +34,7 @@ export class SyncManager {
             );
           })());
     this.retryManager = new RetryManager(this.config);
+    this.conflictResolver = new ConflictResolver(this.config);
 
     this.initPromise = this.initializeDB();
     this.setupEventListeners();
@@ -130,25 +132,25 @@ export class SyncManager {
       throw new Error("Record not found");
     }
 
-    // First, delete the original record
-    await this.db!.delete(this.config.storeName as never, id);
-
-    // Create a deletion record with the server ID
     const deletionRecord: SyncRecord = {
-      id: crypto.randomUUID(),
-      data: { id: record.serverId || record.data.id },
+      id: record.id,
+      data: record.data,
       lastModified: Date.now(),
-      syncStatus: this.isOnline ? "synced" : "pending",
+      syncStatus: "pending",
       operation: "delete",
+      version: record.version,
       serverId: record.serverId,
+      isDeleted: true,
     };
 
     await this.db!.put(this.config.storeName as never, deletionRecord);
 
     if (this.isOnline) {
-      await this.syncRecord(deletionRecord);
-    } else {
-      console.log("Offline, deletion record will be synced later");
+      try {
+        await this.syncRecord(deletionRecord);
+      } catch (error) {
+        console.error("Failed to delete from server:", error);
+      }
     }
   }
 
@@ -169,6 +171,17 @@ export class SyncManager {
 
     try {
       let response: Response;
+
+      if (record.operation === "delete") {
+        const existingRecord = await this.db.get(
+          this.config.storeName as never,
+          record.id
+        );
+        if (!existingRecord) {
+          return;
+        }
+      }
+
       switch (record.operation) {
         case "create":
           response = await this.apiAdapter.create(record);
@@ -184,6 +197,28 @@ export class SyncManager {
       }
 
       const serverData = await this.apiAdapter.handleResponse(response);
+
+      if (response.status === 409) {
+        const resolvedRecord = await this.conflictResolver.resolve(
+          record,
+          serverData
+        );
+
+        await this.db.put(this.config.storeName as never, resolvedRecord);
+
+        if (resolvedRecord.syncStatus === "conflict") {
+          return;
+        }
+
+        if (resolvedRecord.syncStatus === "synced") {
+          return;
+        }
+
+        if (resolvedRecord.syncStatus === "pending") {
+          await this.syncRecord(resolvedRecord);
+        }
+        return;
+      }
 
       if (!response.ok) {
         record.retryCount = (record.retryCount || 0) + 1;
@@ -241,10 +276,70 @@ export class SyncManager {
     }
   }
 
+  async getProcessedRecords(): Promise<any[]> {
+    await this.ensureInitialized();
+    const records = await this.getAll();
+    return records
+      .filter((record) => !record.isDeleted)
+      .map((record) => ({
+        ...record.data,
+        id: record.id,
+        serverId: record.serverId || record.id,
+        hasConflict: record.syncStatus === "conflict",
+        serverVersion:
+          record.syncStatus === "conflict"
+            ? {
+                ...record.serverData,
+              }
+            : undefined,
+        version: record.version,
+        lastModified: record.lastModified,
+        syncStatus: record.syncStatus,
+      }));
+  }
+
+  async getSyncStatus(): Promise<{
+    status: "synced" | "pending" | "conflict";
+    pendingCount: number;
+    conflictCount: number;
+  }> {
+    await this.ensureInitialized();
+    const records = await this.getAll();
+    const pending = records.filter((r) => r.syncStatus === "pending");
+    const conflicts = records.filter((r) => r.syncStatus === "conflict");
+
+    return {
+      status:
+        conflicts.length > 0
+          ? "conflict"
+          : pending.length > 0
+          ? "pending"
+          : "synced",
+      pendingCount: pending.length,
+      conflictCount: conflicts.length,
+    };
+  }
+
+  onSyncStatusChange(
+    callback: (status: {
+      status: "synced" | "pending" | "conflict";
+      pendingCount: number;
+      conflictCount: number;
+    }) => void
+  ): () => void {
+    const interval = setInterval(async () => {
+      const status = await this.getSyncStatus();
+      callback(status);
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }
+
   async resolveConflict(
     id: string,
     resolution: "accept-client" | "accept-server" | "custom",
-    customData?: any
+    customData?: any,
+    options: { skipSync?: boolean } = {}
   ): Promise<void> {
     if (!this.db) throw new Error("Database not initialized");
 
@@ -258,7 +353,7 @@ export class SyncManager {
       case "accept-client":
         resolvedRecord = {
           ...record,
-          syncStatus: "pending",
+          syncStatus: "synced", // Always mark as synced for client acceptance
           serverData: undefined,
           conflictDetails: undefined,
         };
@@ -266,8 +361,10 @@ export class SyncManager {
       case "accept-server":
         resolvedRecord = {
           ...record,
-          data: record.serverData,
-          syncStatus: "synced",
+          data: record.serverData.serverVersion || record.serverData,
+          version: record.serverData.version || (record.version || 0) + 1,
+          lastModified: record.serverData.lastModified || Date.now(),
+          syncStatus: "synced", // Always mark as synced for server acceptance
           serverData: undefined,
           conflictDetails: undefined,
         };
@@ -286,7 +383,12 @@ export class SyncManager {
     }
 
     await this.db.put(this.config.storeName as never, resolvedRecord);
-    if (resolvedRecord.syncStatus === "pending") {
+
+    if (
+      resolvedRecord.syncStatus === "pending" &&
+      !options.skipSync &&
+      resolution !== "accept-server"
+    ) {
       await this.syncRecord(resolvedRecord);
     }
   }

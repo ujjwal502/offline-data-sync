@@ -14,13 +14,15 @@ A robust, TypeScript-based library for managing offline-first data synchronizati
   - Automatic synchronization when online
   - Background sync with configurable batching
   - Real-time connectivity monitoring
+  - Immediate UI updates with offline changes
 
 - **Advanced Conflict Resolution**
 
-  - Multiple resolution strategies
+  - Multiple resolution strategies (client-wins, server-wins, last-write-wins)
   - Custom merge support
-  - Manual conflict resolution
+  - Manual conflict resolution with UI support
   - Version tracking and management
+  - ETag-based conflict detection
 
 - **Robust Error Handling**
 
@@ -28,12 +30,14 @@ A robust, TypeScript-based library for managing offline-first data synchronizati
   - Configurable retry mechanisms
   - Failure recovery strategies
   - Detailed error reporting
+  - Graceful offline deletion handling
 
 - **Flexible Configuration**
   - Customizable sync endpoints
   - Adjustable batch sizes
   - Configurable retry policies
   - Custom merge strategies
+  - Custom API adapters
 
 ## 📋 Prerequisites
 
@@ -51,83 +55,91 @@ npm install offline-data-sync
 ## 🚦 Quick Start
 
 ```typescript
-import { SyncManager, ApiAdapter } from "offline-data-sync";
+import { SyncManager } from "offline-data-sync";
 
-// Implement your API adapter
-class MyApiAdapter implements ApiAdapter {
-  async create(data: any): Promise<any> {
-    // Implement create logic
-    return await fetch("your-api/create", {
-      method: "POST",
-      body: JSON.stringify(data),
-    }).then((res) => res.json());
+// Create a custom API adapter
+class TodoApiAdapter implements ApiAdapter {
+  constructor(private baseUrl: string) {
+    this.apiUrl = baseUrl.replace(/\/$/, "");
   }
-  // Implement other required methods...
+
+  async create(record: SyncRecord): Promise<Response> {
+    return fetch(`${this.apiUrl}/${record.id}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "If-Match": record.version?.toString() || "*",
+      },
+      body: JSON.stringify(record.data),
+    });
+  }
+
+  // Implement other methods...
 }
 
-// Initialize the sync manager with API adapter
+// Initialize SyncManager
 const syncManager = new SyncManager({
-  storeName: "myStore",
-  apiAdapter: new MyApiAdapter(),
-  conflictResolution: "last-write-wins",
+  storeName: "todos",
+  apiAdapter: new TodoApiAdapter("http://localhost:3001/api/todos"),
+  conflictResolution: "server-wins",
   batchSize: 50,
 });
 
-// Create a record
+// Create a todo
 await syncManager.create({
-  title: "New Item",
-  description: "Description",
+  title: "New Todo",
+  completed: false,
 });
 
-// Update a record
-await syncManager.update("recordId", {
-  title: "Updated Title",
+// Update a todo
+await syncManager.update("todo-id", {
+  title: "Updated Todo",
+  completed: true,
 });
 
-// Delete a record
-await syncManager.delete("recordId");
+// Delete a todo
+await syncManager.delete("todo-id");
 
-// Get all records
-const records = await syncManager.getAll();
+// Get processed records (with UI-ready format)
+const records = await syncManager.getProcessedRecords();
+
+// Monitor sync status
+syncManager.onSyncStatusChange((status) => {
+  console.log("Sync status:", status);
+});
 ```
 
-## ⚙️ Configuration Options
+## ⚙️ Configuration
 
 ```typescript
 interface SyncConfig {
-  storeName: string; // IndexedDB store name
-  apiAdapter: ApiAdapter; // Your API adapter implementation
-  syncEndpoint?: string; // Optional server endpoint for sync
-  primaryKey?: string; // Primary key field (default: 'id')
-  conflictResolution?: // Conflict resolution strategy
-  "client-wins" | "server-wins" | "last-write-wins" | "merge" | "manual";
-  batchSize?: number; // Batch size for sync operations
-  maxRetries?: number; // Maximum retry attempts
-  retryDelay?: number; // Base delay between retries (ms)
+  storeName: string;
+  primaryKey?: string;
+  syncEndpoint?: string;
+  apiAdapter?: ApiAdapter;
+  conflictResolution?:
+    | "client-wins"
+    | "server-wins"
+    | "manual"
+    | "last-write-wins"
+    | "merge";
+  batchSize?: number;
+  maxRetries?: number;
+  retryDelay?: number;
   mergeStrategy?: (clientData: any, serverData: any) => any;
 }
 
-// API Adapter Interface
 interface ApiAdapter {
-  create(data: any): Promise<any>;
-  update(id: string, data: any): Promise<any>;
-  delete(id: string): Promise<any>;
-  get(id: string): Promise<any>;
-  getAll(): Promise<any[]>;
+  create(record: SyncRecord): Promise<Response>;
+  update(record: SyncRecord): Promise<Response>;
+  delete(record: SyncRecord): Promise<Response>;
+  handleResponse(response: Response): Promise<Record<string, unknown> | null>;
 }
 ```
 
-## Conflict Resolution Strategies
+## 🔄 Conflict Resolution
 
-### 1. Client Wins
-
-```typescript
-const syncManager = new SyncManager({
-  conflictResolution: "client-wins",
-});
-```
-
-### 2. Server Wins
+### Server Wins (Default)
 
 ```typescript
 const syncManager = new SyncManager({
@@ -135,150 +147,90 @@ const syncManager = new SyncManager({
 });
 ```
 
-### 3. Last Write Wins
+### Client Wins
 
 ```typescript
 const syncManager = new SyncManager({
-  conflictResolution: "last-write-wins",
+  conflictResolution: "client-wins",
 });
 ```
 
-### 4. Custom Merge
-
-```typescript
-const syncManager = new SyncManager({
-  conflictResolution: "merge",
-  mergeStrategy: (clientData, serverData) => {
-    return {
-      ...serverData,
-      ...clientData,
-      mergedAt: Date.now(),
-    };
-  },
-});
-```
-
-### 5. Manual Resolution
+### Manual Resolution
 
 ```typescript
 const syncManager = new SyncManager({
   conflictResolution: "manual",
 });
 
-// Resolve conflicts manually
+// Later, when conflict occurs:
 await syncManager.resolveConflict(
-  recordId,
-  "accept-client" | "accept-server" | "custom",
-  customData
+  "record-id",
+  "accept-server", // or "accept-client" or "custom"
+  customData // optional, for custom resolution
 );
 ```
 
-## Use Cases
+## 🔌 Offline Behavior
 
-- **Field Service Applications**
+- Records are immediately updated in IndexedDB
+- UI reflects changes instantly
+- Changes are queued for sync when online
+- Deletions are handled gracefully
+- Conflicts are detected and resolved on sync
 
-  - Work offline in remote locations
-  - Sync data when connection restored
-  - Handle conflicting updates
+## 🛠 Development
 
-- **Healthcare Applications**
+```bash
+# Install dependencies
+npm install
 
-  - Reliable patient data access
-  - Secure offline storage
-  - Conflict resolution for concurrent updates
+# Build library
+npm run build
 
-- **Point of Sale Systems**
+# Run example app
+cd example/ods-sample-app
+npm install
+npm run dev
 
-  - Operate during network outages
-  - Queue transactions for sync
-  - Maintain data consistency
+# Run test server
+cd example/test-server
+npm install
+npm run dev
+```
 
-- **Content Management Systems**
-  - Offline content editing
-  - Auto-save and sync
-  - Collaborative editing support
+## 📚 API Reference
 
-## API Reference
-
-### SyncManager
+### SyncManager Methods
 
 ```typescript
 class SyncManager {
-  constructor(config: SyncConfig);
-
   async create(data: any): Promise<void>;
   async update(id: string, data: any): Promise<void>;
   async delete(id: string): Promise<void>;
   async get(id: string): Promise<SyncRecord>;
   async getAll(): Promise<SyncRecord[]>;
+  async getProcessedRecords(): Promise<any[]>;
   async resolveConflict(
     id: string,
-    resolution: "accept-client" | "accept-server" | "custom",
+    resolution: string,
     customData?: any
   ): Promise<void>;
+  onSyncStatusChange(callback: (status: SyncStatus) => void): () => void;
 }
 ```
 
-## Development
+## 🔒 Security
 
-```bash
-# Install dependencies
-npm install
+- Secure local data storage using IndexedDB
+- Version control with ETags
+- Data integrity validation
+- Protected sync operations
+- Conflict detection and resolution
 
-# Build the library
-npm run build
+## 📈 Performance
 
-# Link for local development
-npm run link
-
-# Run tests
-npm test
-```
-
-## Performance Considerations
-
-- Implements efficient batch processing
+- Efficient batch processing
 - Optimized IndexedDB operations
 - Minimal memory footprint
-- Network-aware sync strategies
-
-## Security
-
-- Secure local data storage
-- Protected sync operations
-- Version control
-- Data integrity validation
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Example Application
-
-An example application is included in the `example/ods-sample-app` directory to demonstrate the library's capabilities:
-
-```bash
-# Navigate to example app
-cd example/ods-sample-app
-
-# Install dependencies
-npm install
-
-# Start the example app
-npm start
-```
-
-The example app showcases:
-
-- Implementation of API adapter pattern
-- Offline-first data management
-- Real-time sync status monitoring
-- Best practices for library usage
+- Smart conflict resolution
+- Background sync operations
