@@ -41,7 +41,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ujjwal502/offline-data-sync"
+    "url": "git+https://github.com/ujjwal502/offline-data-sync.git"
   },
   "bugs": {
     "url": "https://github.com/ujjwal502/offline-data-sync/issues"
