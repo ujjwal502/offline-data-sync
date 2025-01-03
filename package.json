@@ -39,6 +39,14 @@
   ],
   "author": "ujjwaltiwari2@gmail.com",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ujjwal502/offline-data-sync"
+  },
+  "bugs": {
+    "url": "https://github.com/ujjwal502/offline-data-sync/issues"
+  },
+  "homepage": "https://github.com/ujjwal502/offline-data-sync#readme",
   "devDependencies": {
     "@types/node": "^20.11.0",
     "rimraf": "^5.0.0",
