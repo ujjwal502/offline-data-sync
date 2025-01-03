@@ -27,6 +27,7 @@ interface SyncRecord {
   version?: number;
   retryCount?: number;
   serverData?: any;
+  isDeleted?: boolean;
   conflictDetails?: {
     clientVersion: number;
     serverVersion: number;

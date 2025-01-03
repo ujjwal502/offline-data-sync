@@ -1,49 +1,67 @@
-#root {
+.app {
   max-width: 800px;
   margin: 0 auto;
   padding: 2rem;
 }
 
-.app-container {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 2rem;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
-    Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+header {
+  margin-bottom: 2rem;
+}
+
+h1 {
+  text-align: center;
+  color: #2c3e50;
+  margin-bottom: 1rem;
 }
 
 .status-bar {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background-color: #f8f9fa;
-  padding: 1rem;
-  border-radius: 8px;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.status-online {
+  color: #28a745;
+}
+
+.status-offline {
+  color: #dc3545;
+}
+
+.status-synced {
+  color: #28a745;
+}
+
+.status-pending {
+  color: #ffc107;
+}
+
+.status-conflict {
+  color: #dc3545;
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
   margin-bottom: 2rem;
 }
 
-.connection-status {
-  font-weight: 500;
-}
-
-.sync-status {
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  background-color: #e9ecef;
-}
-
-.pending-changes {
-  font-weight: 500;
-  color: #0d6efd;
-}
-
-.action-buttons {
-  margin-bottom: 2rem;
+.add-todo {
   display: flex;
   gap: 1rem;
 }
 
-.batch-button {
+.todo-input {
+  flex: 1;
+  padding: 0.5rem;
+  font-size: 1rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+}
+
+.add-button {
   padding: 0.5rem 1rem;
   background-color: #0d6efd;
   color: white;
@@ -53,27 +71,19 @@
   transition: background-color 0.2s;
 }
 
-.batch-button:hover {
+.add-button:hover {
   background-color: #0b5ed7;
 }
 
-.add-todo-form {
+.test-controls {
   display: flex;
   gap: 1rem;
-  margin-bottom: 2rem;
+  justify-content: center;
 }
 
-.todo-input {
-  flex: 1;
-  padding: 0.5rem;
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
-  font-size: 1rem;
-}
-
-.add-button {
+.test-button {
   padding: 0.5rem 1rem;
-  background-color: #198754;
+  background-color: #6c757d;
   color: white;
   border: none;
   border-radius: 4px;
@@ -81,8 +91,16 @@
   transition: background-color 0.2s;
 }
 
-.add-button:hover {
-  background-color: #157347;
+.test-button:hover {
+  background-color: #5c636a;
+}
+
+.test-button.danger {
+  background-color: #dc3545;
+}
+
+.test-button.danger:hover {
+  background-color: #bb2d3b;
 }
 
 .todo-list {
@@ -99,26 +117,31 @@
   border-radius: 4px;
   margin-bottom: 0.5rem;
   background-color: white;
+  transition: all 0.2s;
+}
+
+.todo-item:hover {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .todo-checkbox {
   margin-right: 1rem;
-  width: 1.2rem;
-  height: 1.2rem;
 }
 
-.todo-item span {
-  flex: 1;
-  margin-right: 1rem;
-}
-
-.todo-item span.completed {
+.completed {
   text-decoration: line-through;
   color: #6c757d;
 }
 
+.todo-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
 .delete-button {
-  padding: 0.5rem 1rem;
+  padding: 0.25rem 0.5rem;
   background-color: #dc3545;
   color: white;
   border: none;
@@ -131,13 +154,7 @@
   background-color: #bb2d3b;
 }
 
-.conflict-actions {
-  display: flex;
-  gap: 0.5rem;
-  margin-right: 1rem;
-}
-
-.conflict-actions button {
+.conflict-button {
   padding: 0.25rem 0.5rem;
   background-color: #6c757d;
   color: white;
@@ -145,11 +162,42 @@
   border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.2s;
-  font-size: 0.875rem;
 }
 
-.conflict-actions button:hover {
+.conflict-button:hover {
   background-color: #5c636a;
+}
+
+.conflict-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.conflict-message {
+  color: #dc3545;
+  font-weight: 500;
+}
+
+.conflict-button.client {
+  background-color: #0d6efd;
+}
+
+.conflict-button.client:hover {
+  background-color: #0b5ed7;
+}
+
+.conflict-button.server {
+  background-color: #6c757d;
+}
+
+.conflict-button.server:hover {
+  background-color: #5c636a;
+}
+
+.todo-item.has-conflict {
+  border: 2px solid #dc3545;
+  background-color: #fff5f5;
 }
 
 .loading {
@@ -182,68 +230,62 @@
   background-color: #0b5ed7;
 }
 
-.status-synced {
-  color: #198754;
-  font-weight: 500;
-}
-
-.status-pending {
-  color: #ffc107;
-  font-weight: 500;
-}
-
-.status-conflict {
-  color: #dc3545;
-  font-weight: 500;
-}
-
-.todo-item.has-conflict {
-  border: 2px solid #dc3545;
-  background-color: #fff5f5;
-}
-
-.conflict-message {
-  color: #dc3545;
-  font-weight: 500;
-  margin-bottom: 0.5rem;
-}
-
-.conflict-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin: 0 1rem;
-}
-
-.conflict-button {
-  padding: 0.25rem 0.5rem;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  font-size: 0.875rem;
-  color: white;
-}
-
-.conflict-button.client {
-  background-color: #0d6efd;
-}
-
-.conflict-button.client:hover {
-  background-color: #0b5ed7;
-}
-
-.conflict-button.server {
-  background-color: #6c757d;
-}
-
-.conflict-button.server:hover {
-  background-color: #5c636a;
-}
-
 /* Disable styles */
 .todo-checkbox:disabled,
 .delete-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.strategy-selector {
+  margin-top: 1rem;
+  text-align: center;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+}
+
+.strategy-selector label {
+  margin-right: 0.5rem;
+  font-weight: 500;
+}
+
+.strategy-selector select {
+  padding: 0.5rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  margin-right: 1rem;
+  font-size: 1rem;
+}
+
+.current-strategy {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: #6c757d;
+}
+
+.current-strategy strong {
+  color: #0d6efd;
+  text-transform: uppercase;
+}
+
+.conflict-details {
+  background-color: #fff;
+  padding: 0.5rem;
+  border-radius: 4px;
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+}
+
+.conflict-details div {
+  padding: 0.25rem;
+}
+
+.conflict-details div:first-child {
+  border-bottom: 1px solid #dee2e6;
+  color: #0d6efd;
+}
+
+.conflict-details div:last-child {
+  color: #6c757d;
 }

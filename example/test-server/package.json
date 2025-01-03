@@ -1,0 +1,19 @@
+{
+  "name": "offline-data-sync-test-server",
+  "version": "1.0.0",
+  "description": "Test server for offline-data-sync library",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "morgan": "^1.10.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}

@@ -7,9 +7,11 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "link-lib": "npm link offline-data-sync"
   },
   "dependencies": {
+    "idb": "^8.0.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
