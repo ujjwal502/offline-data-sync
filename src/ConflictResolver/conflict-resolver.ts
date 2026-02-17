@@ -15,6 +15,8 @@ export class ConflictResolver {
         return this.merge(record, serverData);
       case "manual":
         return this.markForManualResolution(record, serverData);
+      case "arbitrary":
+        return this.markForArbitrary(record, serverData);
       default:
         return this.serverWins(record, serverData);
     }
