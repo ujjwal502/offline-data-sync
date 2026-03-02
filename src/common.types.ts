@@ -10,6 +10,7 @@ interface SyncConfig {
     | "server-wins"
     | "manual"
     | "last-write-wins"
+  aSadasdasd
     | "merge";
   batchSize?: number;
   maxRetries?: number;
